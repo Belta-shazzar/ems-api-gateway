@@ -33,7 +33,13 @@ public class GatewayConfig {
   public CorsWebFilter corsWebFilter() {
     CorsConfiguration corsConfig = new CorsConfiguration();
     corsConfig.setAllowCredentials(true);
-    corsConfig.setAllowedOrigins(List.of("http://localhost:8000"));
+    corsConfig.setAllowedOrigins(List.of(
+            "http://localhost:4200",
+            "https://ems-client-eight.vercel.app"
+//            "http://192.168.1.156:4200/",
+//            "http://192.168.166.4:4200/",
+//            "https://faaab287c786.ngrok-free.app"
+    ));
     corsConfig.addAllowedHeader("*");
     corsConfig.addAllowedMethod("*");
 
