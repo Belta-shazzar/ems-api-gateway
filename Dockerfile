@@ -24,7 +24,7 @@ USER spring:spring
 COPY --from=build /app/target/*.jar app.jar
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
