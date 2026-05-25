@@ -4,7 +4,7 @@ pipeline {
     parameters {
         string(
             name: 'REGISTRY',
-            defaultValue: 'docker.io/shazzar',
+            defaultValue: 'docker.io',
             description: 'Docker registry (e.g. docker.io/your-org or ghcr.io/your-org)'
         )
         string(
@@ -29,14 +29,16 @@ pipeline {
 //         DEPLOY_USER    = credentials('deploy-user')
 //         DEPLOY_HOST    = credentials('deploy-host')
 
+        IMAGE_REPO     = 'shazzar/ems-api-gateway'
         SERVICE_NAME   = 'api-gateway'
         CONTAINER_NAME = 'ems-api-gateway'
         SERVICE_PORT   = '8000'
-        TAG            = "${params.IMAGE_TAG ?: sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()}"
-        IMAGE          = "${params.REGISTRY}/ems-api-gateway:${TAG}"
+//         TAG            = "${params.IMAGE_TAG ?: sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()}"
+//        IMAGE          = "${params.REGISTRY}/ems-api-gateway:${TAG}"
     }
 
     options {
+        skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timeout(time: 20, unit: 'MINUTES')
         disableConcurrentBuilds()
@@ -48,6 +50,14 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+                script {
+                    env.TAG = params.IMAGE_TAG ?: sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+
+                    env.IMAGE = "${params.REGISTRY}/${env.IMAGE_REPO}:${env.TAG}"
+                }
                 echo "Service: ${env.SERVICE_NAME} | Tag: ${env.TAG} | Environment: ${params.ENVIRONMENT}"
             }
         }
@@ -79,7 +89,11 @@ pipeline {
 
         stage('Push Image') {
             steps {
-                sh "echo ${DOCKER_CREDS_PSW} | docker login ${params.REGISTRY} -u ${DOCKER_CREDS_USR} --password-stdin"
+//                 sh "echo ${DOCKER_CREDS_PSW} | docker login ${params.REGISTRY} -u ${DOCKER_CREDS_USR} --password-stdin"
+                sh """
+                    echo "$DOCKER_CREDS_PSW" | docker login ${params.REGISTRY} \
+                    -u "$DOCKER_CREDS_USR" --password-stdin
+                """
                 sh "docker push ${env.IMAGE}"
             }
             post {
