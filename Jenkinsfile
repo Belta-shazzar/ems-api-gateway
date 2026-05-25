@@ -94,6 +94,7 @@ pipeline {
             post {
                 always {
                     sh "docker logout ${params.REGISTRY} || true"
+                    sh "docker rmi ${env.IMAGE} 2>/dev/null || true"
                 }
             }
         }
@@ -105,9 +106,6 @@ pipeline {
         }
         failure {
             echo "Deployment of ${env.SERVICE_NAME}:${env.TAG} to ${params.ENVIRONMENT} failed."
-        }
-        always {
-            sh "docker rmi ${env.IMAGE} 2>/dev/null || true"
         }
     }
 }
