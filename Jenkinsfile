@@ -26,15 +26,11 @@ pipeline {
 
     environment {
         DOCKER_CREDS   = credentials('docker-registry-credentials')
-//         DEPLOY_USER    = credentials('deploy-user')
-//         DEPLOY_HOST    = credentials('deploy-host')
 
         IMAGE_REPO     = 'shazzar/ems-api-gateway'
         SERVICE_NAME   = 'api-gateway'
         CONTAINER_NAME = 'ems-api-gateway'
         SERVICE_PORT   = '8000'
-//         TAG            = "${params.IMAGE_TAG ?: sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()}"
-//        IMAGE          = "${params.REGISTRY}/ems-api-gateway:${TAG}"
     }
 
     options {
@@ -89,7 +85,6 @@ pipeline {
 
         stage('Push Image') {
             steps {
-//                 sh "echo ${DOCKER_CREDS_PSW} | docker login ${params.REGISTRY} -u ${DOCKER_CREDS_USR} --password-stdin"
                 sh """
                     echo "$DOCKER_CREDS_PSW" | docker login ${params.REGISTRY} \
                     -u "$DOCKER_CREDS_USR" --password-stdin
@@ -102,37 +97,6 @@ pipeline {
                 }
             }
         }
-
-//         stage('Deploy') {
-//             steps {
-//                 sshagent(['deploy-ssh-key']) {
-//                     sh """
-//                         ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST} '
-//                             docker pull ${env.IMAGE}
-//                             docker stop ${env.CONTAINER_NAME} 2>/dev/null || true
-//                             docker rm   ${env.CONTAINER_NAME} 2>/dev/null || true
-//                             docker run -d \\
-//                                 --name ${env.CONTAINER_NAME} \\
-//                                 --network ems-network \\
-//                                 --restart unless-stopped \\
-//                                 -p ${env.SERVICE_PORT}:${env.SERVICE_PORT} \\
-//                                 -e SPRING_PROFILES_ACTIVE=${params.ENVIRONMENT} \\
-//                                 -e CONFIG_SERVER_HOST=ems-config-server \\
-//                                 ${env.IMAGE}
-//                         '
-//                     """
-//                 }
-//             }
-//         }
-//
-//         stage('Health Check') {
-//             steps {
-//                 retry(5) {
-//                     sleep time: 15, unit: 'SECONDS'
-//                     sh "curl -sf http://${DEPLOY_HOST}:${env.SERVICE_PORT}/actuator/health | grep -q UP"
-//                 }
-//             }
-//         }
     }
 
     post {
