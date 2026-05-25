@@ -63,23 +63,23 @@ pipeline {
                 expression { !params.SKIP_TESTS }
             }
             steps {
-                dir('api-gateway') {
-                    sh 'mvn test -B'
-                }
+//                dir('api-gateway') {
+                sh 'mvn test -B'
+//                }
             }
             post {
                 always {
                     junit allowEmptyResults: true,
-                          testResults: 'api-gateway/target/surefire-reports/*.xml'
+                        testResults: 'api-gateway/target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Build Image') {
             steps {
-                dir('api-gateway') {
-                    sh "docker build -t ${env.IMAGE} ."
-                }
+//                dir('api-gateway') {
+                sh "docker build -t ${env.IMAGE} ."
+//                }
             }
         }
 
