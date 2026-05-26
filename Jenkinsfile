@@ -5,18 +5,21 @@ pipeline {
         string(
             name: 'REGISTRY',
             defaultValue: 'docker.io',
-            description: 'Docker registry (e.g. docker.io/your-org or ghcr.io/your-org)'
+            description: 'Docker registry'
         )
+
         string(
             name: 'IMAGE_TAG',
             defaultValue: '',
-            description: 'Image tag — defaults to the short Git commit SHA'
+            description: 'Image tag'
         )
+
         choice(
             name: 'ENVIRONMENT',
             choices: ['dev', 'staging', 'prod'],
-            description: 'Target deployment environment'
+            description: 'Deployment environment'
         )
+
         booleanParam(
             name: 'SKIP_TESTS',
             defaultValue: false,
@@ -25,18 +28,16 @@ pipeline {
     }
 
     environment {
-        DOCKER_CREDS   = credentials('docker-registry-credentials')
+        DOCKER_CREDS = credentials('docker-registry-credentials')
 
-        IMAGE_REPO     = 'shazzar/ems-api-gateway'
-        SERVICE_NAME   = 'api-gateway'
-        CONTAINER_NAME = 'ems-api-gateway'
-        SERVICE_PORT   = '8000'
+        IMAGE_REPO = 'shazzar/ems-api-gateway'
+        SERVICE_NAME = 'api-gateway'
     }
 
     options {
         skipDefaultCheckout(true)
         buildDiscarder(logRotator(numToKeepStr: '10'))
-        timeout(time: 20, unit: 'MINUTES')
+        timeout(time: 60, unit: 'MINUTES')
         disableConcurrentBuilds()
         timestamps()
     }
@@ -46,6 +47,7 @@ pipeline {
         stage('Checkout') {
             steps {
                 checkout scm
+
                 script {
                     env.TAG = params.IMAGE_TAG ?: sh(
                         script: 'git rev-parse --short HEAD',
@@ -54,47 +56,48 @@ pipeline {
 
                     env.IMAGE = "${params.REGISTRY}/${env.IMAGE_REPO}:${env.TAG}"
                 }
-                echo "Service: ${env.SERVICE_NAME} | Tag: ${env.TAG} | Environment: ${params.ENVIRONMENT}"
+
+                echo "Building ${env.IMAGE}"
             }
         }
 
-        stage('Test') {
-            when {
-                expression { !params.SKIP_TESTS }
-            }
+        stage('Build Jar') {
             steps {
-//                dir('api-gateway') {
-                sh 'mvn test -B'
-//                }
+                sh """
+                    chmod +x mvnw
+                    ./mvnw clean package ${params.SKIP_TESTS ? '-DskipTests' : ''} -B
+                """
             }
+
             post {
                 always {
                     junit allowEmptyResults: true,
-                        testResults: 'target/surefire-reports/*.xml'
+                           testResults: 'target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Build Image') {
             steps {
-//                dir('api-gateway') {
                 sh "docker build -t ${env.IMAGE} ."
-//                }
             }
         }
 
         stage('Push Image') {
             steps {
+
                 sh """
                     echo "$DOCKER_CREDS_PSW" | docker login ${params.REGISTRY} \
                     -u "$DOCKER_CREDS_USR" --password-stdin
                 """
+
                 sh "docker push ${env.IMAGE}"
             }
+
             post {
                 always {
                     sh "docker logout ${params.REGISTRY} || true"
-                    sh "docker rmi ${env.IMAGE} 2>/dev/null || true"
+                    sh "docker rmi ${env.IMAGE} || true"
                 }
             }
         }
@@ -102,10 +105,11 @@ pipeline {
 
     post {
         success {
-            echo "Deployment of ${env.SERVICE_NAME}:${env.TAG} to ${params.ENVIRONMENT} succeeded."
+            echo "Deployment succeeded."
         }
+
         failure {
-            echo "Deployment of ${env.SERVICE_NAME}:${env.TAG} to ${params.ENVIRONMENT} failed."
+            echo "Deployment failed."
         }
     }
 }
