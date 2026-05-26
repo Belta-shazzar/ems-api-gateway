@@ -70,7 +70,7 @@ pipeline {
             post {
                 always {
                     junit allowEmptyResults: true,
-                        testResults: 'api-gateway/target/surefire-reports/*.xml'
+                        testResults: 'target/surefire-reports/*.xml'
                 }
             }
         }
