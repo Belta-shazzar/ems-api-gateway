@@ -1,5 +1,6 @@
 package com.ems.apigateway.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
@@ -12,18 +13,27 @@ import java.util.List;
 
 @Configuration
 public class GatewayConfig {
+
+  // dev default: lb://auth-service (Eureka) | prod: set via Parameter Store
+  @Value("${services.auth.url:lb://auth-service}")
+  private String authServiceUrl;
+
+  // dev default: lb://employee-service (Eureka) | prod: set via Parameter Store
+  @Value("${services.employee.url:lb://employee-service}")
+  private String employeeServiceUrl;
+
   @Bean
   public RouteLocator customRoutesLocator(RouteLocatorBuilder builder) {
     return builder.routes()
             .route("employee-service", r -> r
                     .path("/employee-service/**")
                     .filters(f -> f.stripPrefix(1))
-                    .uri("lb://employee-service")
+                    .uri(employeeServiceUrl)
             )
             .route("auth-service", r -> r
                     .path("/auth-service/**")
                     .filters(f -> f.stripPrefix(1))
-                    .uri("lb://auth-service")
+                    .uri(authServiceUrl)
             )
             .build();
   }

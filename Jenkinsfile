@@ -65,7 +65,10 @@ pipeline {
             steps {
                 sh """
                     chmod +x mvnw
-                    ./mvnw clean package ${params.SKIP_TESTS ? '-DskipTests' : ''} -B
+                    ./mvnw clean package \
+                      ${params.SKIP_TESTS ? '-DskipTests' : ''} \
+                      -Dspring.profiles.active=prod \
+                      -B
                 """
             }
 
